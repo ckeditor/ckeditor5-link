@@ -66,6 +66,11 @@ export default class LinkFormView extends View {
 		 */
 		this.saveButtonView = this._createButton( t( 'Save' ) );
 		this.saveButtonView.type = 'submit';
+		Template.extend( this.saveButtonView.template, {
+			attributes: {
+				class: [ 'ck-button-action' ]
+			}
+		} );
 
 		/**
 		 * The cancel button view.
@@ -110,42 +115,7 @@ export default class LinkFormView extends View {
 			}
 		} );
 
-		Template.extend( this.saveButtonView.template, {
-			attributes: {
-				class: [
-					'ck-button-action'
-				]
-			}
-		} );
-
-		this.template = new Template( {
-			tag: 'form',
-
-			attributes: {
-				class: [
-					'ck-link-form',
-				]
-			},
-
-			children: [
-				this.urlInputView,
-				{
-					tag: 'div',
-
-					attributes: {
-						class: [
-							'ck-link-form__actions'
-						]
-					},
-
-					children: [
-						this.saveButtonView,
-						this.cancelButtonView,
-						this.unlinkButtonView
-					]
-				}
-			]
-		} );
+		this.template = new Template( this._getTemplateDefinition() );
 
 		submitHandler( {
 			view: this
@@ -219,6 +189,43 @@ export default class LinkFormView extends View {
 		}
 
 		return button;
+	}
+
+	/**
+	 * Returns template definition.
+	 *
+	 * @returns {Object}
+	 * @protected
+	 */
+	_getTemplateDefinition() {
+		return {
+			tag: 'form',
+
+			attributes: {
+				class: [
+					'ck-link-form',
+				]
+			},
+
+			children: [
+				this.urlInputView,
+				{
+					tag: 'div',
+
+					attributes: {
+						class: [
+							'ck-link-form__actions'
+						]
+					},
+
+					children: [
+						this.saveButtonView,
+						this.cancelButtonView,
+						this.unlinkButtonView
+					]
+				}
+			]
+		};
 	}
 }
 
