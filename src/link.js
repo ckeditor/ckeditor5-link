@@ -78,7 +78,7 @@ export default class Link extends Plugin {
 	/**
 	 * Creates the {@link module:link/ui/linkformview~LinkFormView} instance.
 	 *
-	 * @private
+	 * @protected
 	 * @returns {module:link/ui/linkformview~LinkFormView} Link form instance.
 	 */
 	_createForm() {

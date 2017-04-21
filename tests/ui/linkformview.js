@@ -191,4 +191,14 @@ describe( 'LinkFormView', () => {
 			sinon.assert.calledOnce( spy );
 		} );
 	} );
+
+	describe( '_getTemplateDefinition()', () => {
+		it( 'should return template definition', () => {
+			const result = view._getTemplateDefinition();
+
+			expect( result ).to.be.an( 'object' );
+			expect( result ).to.have.property( 'tag' );
+			expect( result ).to.have.property( 'children' );
+		} );
+	} );
 } );

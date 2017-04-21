@@ -15,6 +15,7 @@ import Link from '../src/link';
 import LinkEngine from '../src/linkengine';
 import ContextualBalloon from '@ckeditor/ckeditor5-ui/src/panel/balloon/contextualballoon';
 import ButtonView from '@ckeditor/ckeditor5-ui/src/button/buttonview';
+import LinkFormView from '../src/ui/linkformview';
 
 import Range from '@ckeditor/ckeditor5-engine/src/view/range';
 import ClickObserver from '@ckeditor/ckeditor5-engine/src/view/observer/clickobserver';
@@ -247,6 +248,92 @@ describe( 'Link', () => {
 			editor.editing.view.render();
 
 			sinon.assert.notCalled( spy );
+		} );
+	} );
+
+	describe( '_createLinkForm()', () => {
+		let focusEditableSpy;
+
+		beforeEach( () => {
+			focusEditableSpy = testUtils.sinon.spy( editor.editing.view, 'focus' );
+		} );
+
+		it( 'should create #formView instance', () => {
+			expect( linkFeature._createForm() ).to.instanceof( LinkFormView );
+		} );
+
+		it( 'should mark the editor ui as focused when the #formView is focused', () => {
+			return linkFeature._showPanel()
+				.then( () => {
+					editor.ui.focusTracker.isFocused = false;
+
+					formView.element.dispatchEvent( new Event( 'focus' ) );
+
+					expect( editor.ui.focusTracker.isFocused ).to.true;
+				} );
+		} );
+
+		describe( 'binding', () => {
+			it( 'should bind formView.urlInputView#value to link command value', () => {
+				const command = editor.commands.get( 'link' );
+
+				expect( formView.urlInputView.value ).to.undefined;
+
+				command.value = 'http://cksource.com';
+				expect( formView.urlInputView.value ).to.equal( 'http://cksource.com' );
+			} );
+
+			it( 'should execute link command on formView#submit event', () => {
+				const executeSpy = testUtils.sinon.spy( editor, 'execute' );
+
+				formView.urlInputView.value = 'http://ckeditor.com';
+				expect( formView.urlInputView.inputView.element.value ).to.equal( 'http://ckeditor.com' );
+
+				formView.urlInputView.inputView.element.value = 'http://cksource.com';
+				formView.fire( 'submit' );
+
+				expect( executeSpy.calledOnce ).to.true;
+				expect( executeSpy.calledWithExactly( 'link', 'http://cksource.com' ) ).to.true;
+			} );
+
+			it( 'should hide and focus editable on formView#submit event', () => {
+				return linkFeature._showPanel()
+					.then( () => {
+						formView.fire( 'submit' );
+
+						expect( balloon.visibleView ).to.null;
+						expect( focusEditableSpy.calledOnce ).to.true;
+					} );
+			} );
+
+			it( 'should execute unlink command on formView#unlink event', () => {
+				const executeSpy = testUtils.sinon.spy( editor, 'execute' );
+
+				formView.fire( 'unlink' );
+
+				expect( executeSpy.calledOnce ).to.true;
+				expect( executeSpy.calledWithExactly( 'unlink' ) ).to.true;
+			} );
+
+			it( 'should hide and focus editable on formView#unlink event', () => {
+				return linkFeature._showPanel()
+					.then( () => {
+						formView.fire( 'unlink' );
+
+						expect( balloon.visibleView ).to.null;
+						expect( focusEditableSpy.calledOnce ).to.true;
+					} );
+			} );
+
+			it( 'should hide and focus editable on formView#cancel event', () => {
+				return linkFeature._showPanel()
+					.then( () => {
+						formView.fire( 'cancel' );
+
+						expect( balloon.visibleView ).to.null;
+						expect( focusEditableSpy.calledOnce ).to.true;
+					} );
+			} );
 		} );
 	} );
 
@@ -582,88 +669,6 @@ describe( 'Link', () => {
 				observer.fire( 'click', { target: {} } );
 
 				sinon.assert.notCalled( showSpy );
-			} );
-		} );
-	} );
-
-	describe( 'link form', () => {
-		let focusEditableSpy;
-
-		beforeEach( () => {
-			focusEditableSpy = testUtils.sinon.spy( editor.editing.view, 'focus' );
-		} );
-
-		it( 'should mark the editor ui as focused when the #formView is focused', () => {
-			return linkFeature._showPanel()
-				.then( () => {
-					editor.ui.focusTracker.isFocused = false;
-
-					formView.element.dispatchEvent( new Event( 'focus' ) );
-
-					expect( editor.ui.focusTracker.isFocused ).to.true;
-				} );
-		} );
-
-		describe( 'binding', () => {
-			it( 'should bind formView.urlInputView#value to link command value', () => {
-				const command = editor.commands.get( 'link' );
-
-				expect( formView.urlInputView.value ).to.undefined;
-
-				command.value = 'http://cksource.com';
-				expect( formView.urlInputView.value ).to.equal( 'http://cksource.com' );
-			} );
-
-			it( 'should execute link command on formView#submit event', () => {
-				const executeSpy = testUtils.sinon.spy( editor, 'execute' );
-
-				formView.urlInputView.value = 'http://ckeditor.com';
-				expect( formView.urlInputView.inputView.element.value ).to.equal( 'http://ckeditor.com' );
-
-				formView.urlInputView.inputView.element.value = 'http://cksource.com';
-				formView.fire( 'submit' );
-
-				expect( executeSpy.calledOnce ).to.true;
-				expect( executeSpy.calledWithExactly( 'link', 'http://cksource.com' ) ).to.true;
-			} );
-
-			it( 'should hide and focus editable on formView#submit event', () => {
-				return linkFeature._showPanel()
-					.then( () => {
-						formView.fire( 'submit' );
-
-						expect( balloon.visibleView ).to.null;
-						expect( focusEditableSpy.calledOnce ).to.true;
-					} );
-			} );
-
-			it( 'should execute unlink command on formView#unlink event', () => {
-				const executeSpy = testUtils.sinon.spy( editor, 'execute' );
-
-				formView.fire( 'unlink' );
-
-				expect( executeSpy.calledOnce ).to.true;
-				expect( executeSpy.calledWithExactly( 'unlink' ) ).to.true;
-			} );
-
-			it( 'should hide and focus editable on formView#unlink event', () => {
-				return linkFeature._showPanel()
-					.then( () => {
-						formView.fire( 'unlink' );
-
-						expect( balloon.visibleView ).to.null;
-						expect( focusEditableSpy.calledOnce ).to.true;
-					} );
-			} );
-
-			it( 'should hide and focus editable on formView#cancel event', () => {
-				return linkFeature._showPanel()
-					.then( () => {
-						formView.fire( 'cancel' );
-
-						expect( balloon.visibleView ).to.null;
-						expect( focusEditableSpy.calledOnce ).to.true;
-					} );
 			} );
 		} );
 	} );
