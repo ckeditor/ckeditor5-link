@@ -41,6 +41,15 @@ describe( 'UnlinkCommand', () => {
 
 			expect( refreshStateSpy.calledOnce ).to.true;
 		} );
+
+		// https://github.com/ckeditor/ckeditor5-link/issues/93
+		it( 'should determine the initial state of the command', () => {
+			const refreshStateSpy = testUtils.sinon.spy( UnlinkCommand.prototype, 'refreshState' );
+
+			new UnlinkCommand( editor );
+
+			expect( refreshStateSpy.calledOnce ).to.true;
+		} );
 	} );
 
 	describe( '_doExecute', () => {
