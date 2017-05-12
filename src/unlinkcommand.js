@@ -25,6 +25,10 @@ export default class UnlinkCommand extends Command {
 
 		// Checks when command should be enabled or disabled.
 		this.listenTo( editor.document.selection, 'change:attribute', () => this.refreshState() );
+
+		// Determine the initial state of the command.
+		// https://github.com/ckeditor/ckeditor5-link/issues/93
+		this.refreshState();
 	}
 
 	/**
