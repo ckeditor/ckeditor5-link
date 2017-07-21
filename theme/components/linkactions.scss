@@ -1,0 +1,41 @@
+// Copyright (c) 2003-2017, CKSource - Frederico Knabben. All rights reserved.
+// For licensing, see LICENSE.md or http://ckeditor.com/license
+
+@import '~@ckeditor/ckeditor5-theme-lark/theme/helpers/_spacing';
+@import '~@ckeditor/ckeditor5-theme-lark/theme/helpers/_colors.scss';
+
+.ck-link {
+	&-actions {
+		padding: ck-spacing( 'medium' );
+		overflow: hidden;
+
+		&:focus {
+			// https://github.com/ckeditor/ckeditor5-link/issues/90
+			outline: none;
+		}
+
+		// Note: No &__opener here – too low specificity overridden by ck-reset.
+		.ck-link-actions__opener {
+			color: #0000EE; // TODO ck-color()
+			display: inline-block;
+			text-overflow: ellipsis;
+			overflow: hidden;
+			max-width: 150px;
+
+			&:hover {
+				text-decoration: underline;
+			}
+
+			margin-left: ck-spacing( 'medium' );
+			margin-right: ck-spacing( 'medium' );
+		}
+
+		.ck-button {
+			padding: ck-spacing( 'tiny' ) ck-spacing( 'medium' );
+		}
+
+		* + * {
+			margin-left: ck-spacing( 'medium' );
+		}
+	}
+}
