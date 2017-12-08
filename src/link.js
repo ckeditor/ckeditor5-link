@@ -10,6 +10,7 @@
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
 import ClickObserver from '@ckeditor/ckeditor5-engine/src/view/observer/clickobserver';
 import Range from '@ckeditor/ckeditor5-engine/src/view/range';
+import ModelRange from '@ckeditor/ckeditor5-engine/src/model/range';
 import LinkEngine from './linkengine';
 import LinkElement from './linkelement';
 import ContextualBalloon from '@ckeditor/ckeditor5-ui/src/panel/balloon/contextualballoon';
@@ -20,6 +21,11 @@ import ButtonView from '@ckeditor/ckeditor5-ui/src/button/buttonview';
 import LinkFormView from './ui/linkformview';
 
 import linkIcon from '../theme/icons/link.svg';
+
+import { keyCodes } from '@ckeditor/ckeditor5-utils/src/keyboard';
+import first from '@ckeditor/ckeditor5-utils/src/first';
+import buildModelConverter from '@ckeditor/ckeditor5-engine/src/conversion/buildmodelconverter';
+// import { convertSelectionAttribute } from '@ckeditor/ckeditor5-engine/src/conversion/model-selection-to-view-converters';
 
 const linkKeystroke = 'Ctrl+K';
 
@@ -74,6 +80,8 @@ export default class Link extends Plugin {
 
 		// Attach lifecycle actions to the the balloon.
 		this._attachActions();
+
+		this._setUpSmartSelection();
 	}
 
 	/**
@@ -355,6 +363,111 @@ export default class Link extends Plugin {
 			} else {
 				return null;
 			}
+		}
+	}
+
+	_setUpSmartSelection() {
+		const editor = this.editor;
+		const view = editor.editing.view;
+		const doc = editor.document;
+
+		view.on( 'keydown', ( evt, data ) => {
+			if ( data.keyCode != keyCodes.arrowright ) {
+				return;
+			}
+
+			const selection = doc.selection;
+
+			if ( selection.hasAttribute( 'linkHref' ) ) {
+				const blocks = selection.getSelectedBlocks();
+				const walker = new ModelRange(
+					selection.getFirstRange().start,
+					ModelRange.createIn( first( blocks ) ).end
+				).getWalker( {
+					singleCharacters: true
+				} );
+
+				const next = walker.next();
+
+				if ( next.value ) {
+					const nextItem = next.value.item;
+
+					if ( !nextItem.hasAttribute( 'linkHref' ) ) {
+						hesitate( data, selection );
+					}
+				} else {
+					hesitate( data, selection );
+				}
+			}
+		} );
+
+		// const x = convertSelectionAttribute( ( evt, data ) => {
+		// 	const linkElement = new LinkElement( 'a', {
+		// 		href: data.value,
+		// 		'ck-link-selected': 'true'
+		// 	} );
+
+		// 	// https://github.com/ckeditor/ckeditor5-link/issues/121
+		// 	linkElement.priority = 5;
+
+		// 	return linkElement;
+		// } );
+
+		// editor.editing.modelToView.on( 'selectionAttribute:linkHref', x, { priority: 'high' } );
+
+		// let viewElementWithAttribute;
+
+		// doc.on( 'changesDone', () => {
+		// 	const selection = doc.selection;
+
+		// 	if ( selection.isCollapsed && selection.hasAttribute( 'linkHref' ) ) {
+		// 		const viewLinkElement = this._getSelectedLinkElement();
+
+		// 		if ( viewLinkElement ) {
+		// 			viewLinkElement.setAttribute( 'ck-link-selected', 'true' );
+		// 			viewElementWithAttribute = viewLinkElement;
+		// 			debugger;
+		// 		}
+		// 	}
+		// }, { priority: 'lowest' } );
+
+		doc.on( 'changesDone', () => {
+			const selection = doc.selection;
+
+			if ( selection.isCollapsed && selection.hasAttribute( 'linkHref' ) ) {
+				const viewLinkElement = this._getSelectedLinkElement();
+				const viewRange = Range.createOn( viewLinkElement );
+				const modelRange = editor.editing.mapper.toModelRange( viewRange );
+
+				const marker = doc.markers.get( 'linkHref' );
+
+				if ( !marker ) {
+					doc.enqueueChanges( () => {
+						doc.markers.set( 'linkHref', modelRange );
+					} );
+				} else if ( !marker.getRange().isEqual( modelRange ) ) {
+					doc.enqueueChanges( () => {
+						// doc.markers.remove( 'linkHref' );
+						doc.markers.set( 'linkHref', modelRange );
+					} );
+				}
+			} else if ( doc.markers.has( 'linkHref' ) ) {
+				doc.enqueueChanges( () => {
+					doc.markers.remove( 'linkHref' );
+				} );
+			}
+		}, { priority: 'low' } );
+
+		buildModelConverter().for( editor.editing.modelToView )
+			.fromMarker( 'linkHref' )
+			.toHighlight( () => ( {
+				class: 'ck-link-href',
+				priority: 1
+			} ) );
+
+		function hesitate( data, selection ) {
+			data.preventDefault();
+			selection.removeAttribute( 'linkHref' );
 		}
 	}
 }
