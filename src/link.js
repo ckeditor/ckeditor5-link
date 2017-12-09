@@ -9,7 +9,7 @@
 
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
 import ClickObserver from '@ckeditor/ckeditor5-engine/src/view/observer/clickobserver';
-import Range from '@ckeditor/ckeditor5-engine/src/view/range';
+import ViewRange from '@ckeditor/ckeditor5-engine/src/view/range';
 import ModelRange from '@ckeditor/ckeditor5-engine/src/model/range';
 import LinkEngine from './linkengine';
 import LinkElement from './linkelement';
@@ -25,7 +25,8 @@ import linkIcon from '../theme/icons/link.svg';
 import { keyCodes } from '@ckeditor/ckeditor5-utils/src/keyboard';
 import first from '@ckeditor/ckeditor5-utils/src/first';
 import buildModelConverter from '@ckeditor/ckeditor5-engine/src/conversion/buildmodelconverter';
-// import { convertSelectionAttribute } from '@ckeditor/ckeditor5-engine/src/conversion/model-selection-to-view-converters';
+import findLinkRange from './findlinkrange';
+import '../theme/link.css';
 
 const linkKeystroke = 'Ctrl+K';
 
@@ -358,7 +359,7 @@ export default class Link extends Plugin {
 			}
 
 			// Check if the LinkElement is fully selected.
-			if ( Range.createIn( startLink ).getTrimmed().isEqual( range ) ) {
+			if ( ViewRange.createIn( startLink ).getTrimmed().isEqual( range ) ) {
 				return startLink;
 			} else {
 				return null;
@@ -387,67 +388,26 @@ export default class Link extends Plugin {
 					singleCharacters: true
 				} );
 
-				const next = walker.next();
+				const next = walker.next().value;
 
-				if ( next.value ) {
-					const nextItem = next.value.item;
-
-					if ( !nextItem.hasAttribute( 'linkHref' ) ) {
-						hesitate( data, selection );
-					}
-				} else {
-					hesitate( data, selection );
+				if ( !next || !next.item.hasAttribute( 'linkHref' ) ) {
+					data.preventDefault();
+					doc.enqueueChanges( () => {
+						selection.removeAttribute( 'linkHref' );
+					} );
 				}
 			}
 		} );
 
-		// const x = convertSelectionAttribute( ( evt, data ) => {
-		// 	const linkElement = new LinkElement( 'a', {
-		// 		href: data.value,
-		// 		'ck-link-selected': 'true'
-		// 	} );
-
-		// 	// https://github.com/ckeditor/ckeditor5-link/issues/121
-		// 	linkElement.priority = 5;
-
-		// 	return linkElement;
-		// } );
-
-		// editor.editing.modelToView.on( 'selectionAttribute:linkHref', x, { priority: 'high' } );
-
-		// let viewElementWithAttribute;
-
-		// doc.on( 'changesDone', () => {
-		// 	const selection = doc.selection;
-
-		// 	if ( selection.isCollapsed && selection.hasAttribute( 'linkHref' ) ) {
-		// 		const viewLinkElement = this._getSelectedLinkElement();
-
-		// 		if ( viewLinkElement ) {
-		// 			viewLinkElement.setAttribute( 'ck-link-selected', 'true' );
-		// 			viewElementWithAttribute = viewLinkElement;
-		// 			debugger;
-		// 		}
-		// 	}
-		// }, { priority: 'lowest' } );
-
 		doc.on( 'changesDone', () => {
 			const selection = doc.selection;
 
-			if ( selection.isCollapsed && selection.hasAttribute( 'linkHref' ) ) {
-				const viewLinkElement = this._getSelectedLinkElement();
-				const viewRange = Range.createOn( viewLinkElement );
-				const modelRange = editor.editing.mapper.toModelRange( viewRange );
-
+			if ( selection.hasAttribute( 'linkHref' ) ) {
+				const modelRange = findLinkRange( selection.getFirstPosition(), selection.getAttribute( 'linkHref' ) );
 				const marker = doc.markers.get( 'linkHref' );
 
-				if ( !marker ) {
+				if ( !marker || !marker.getRange().isEqual( modelRange ) ) {
 					doc.enqueueChanges( () => {
-						doc.markers.set( 'linkHref', modelRange );
-					} );
-				} else if ( !marker.getRange().isEqual( modelRange ) ) {
-					doc.enqueueChanges( () => {
-						// doc.markers.remove( 'linkHref' );
 						doc.markers.set( 'linkHref', modelRange );
 					} );
 				}
@@ -461,14 +421,9 @@ export default class Link extends Plugin {
 		buildModelConverter().for( editor.editing.modelToView )
 			.fromMarker( 'linkHref' )
 			.toHighlight( () => ( {
-				class: 'ck-link-href',
+				class: 'ck-link_selected',
 				priority: 1
 			} ) );
-
-		function hesitate( data, selection ) {
-			data.preventDefault();
-			selection.removeAttribute( 'linkHref' );
-		}
 	}
 }
 
