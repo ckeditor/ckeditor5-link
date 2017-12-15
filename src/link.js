@@ -370,7 +370,8 @@ export default class Link extends Plugin {
 	_setUpSmartSelection() {
 		const editor = this.editor;
 		const view = editor.editing.view;
-		const doc = editor.document;
+		const model = this.editor.model;
+		const doc = model.document;
 
 		view.on( 'keydown', ( evt, data ) => {
 			if ( data.keyCode != keyCodes.arrowright ) {
@@ -392,7 +393,7 @@ export default class Link extends Plugin {
 
 				if ( !next || !next.item.hasAttribute( 'linkHref' ) ) {
 					data.preventDefault();
-					doc.enqueueChanges( () => {
+					model.change( () => {
 						selection.removeAttribute( 'linkHref' );
 					} );
 				}
@@ -404,16 +405,16 @@ export default class Link extends Plugin {
 
 			if ( selection.hasAttribute( 'linkHref' ) ) {
 				const modelRange = findLinkRange( selection.getFirstPosition(), selection.getAttribute( 'linkHref' ) );
-				const marker = doc.markers.get( 'linkHref' );
+				const marker = model.markers.get( 'linkHref' );
 
 				if ( !marker || !marker.getRange().isEqual( modelRange ) ) {
-					doc.enqueueChanges( () => {
-						doc.markers.set( 'linkHref', modelRange );
+					model.change( () => {
+						model.markers.set( 'linkHref', modelRange );
 					} );
 				}
-			} else if ( doc.markers.has( 'linkHref' ) ) {
-				doc.enqueueChanges( () => {
-					doc.markers.remove( 'linkHref' );
+			} else if ( model.markers.has( 'linkHref' ) ) {
+				model.change( () => {
+					model.markers.remove( 'linkHref' );
 				} );
 			}
 		}, { priority: 'low' } );
