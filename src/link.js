@@ -369,6 +369,7 @@ export default class Link extends Plugin {
 		let prevSelectedLink = this._getSelectedLinkElement();
 		let prevSelectionParent = getSelectionParent();
 
+		// Listen to the render event on `low` priority to execute after view is already rendered to the DOM.
 		this.listenTo( editingView, 'render', () => {
 			const selectedLink = this._getSelectedLinkElement();
 			const selectionParent = getSelectionParent();
@@ -399,7 +400,7 @@ export default class Link extends Plugin {
 
 			prevSelectedLink = selectedLink;
 			prevSelectionParent = selectionParent;
-		} );
+		}, { priority: 'low' } );
 
 		function getSelectionParent() {
 			return editingView.document.selection.focus.getAncestors()
