@@ -20,7 +20,6 @@ import ButtonView from '@ckeditor/ckeditor5-ui/src/button/buttonview';
 
 import Range from '@ckeditor/ckeditor5-engine/src/view/range';
 import ClickObserver from '@ckeditor/ckeditor5-engine/src/view/observer/clickobserver';
-import priorities from '@ckeditor/ckeditor5-utils/src/priorities';
 
 testUtils.createSinonSandbox();
 
@@ -250,19 +249,16 @@ describe( 'Link', () => {
 				sinon.assert.calledTwice( spy );
 			} );
 
-			it( 'should update position on #render with low priority', () => {
+			it( 'should update balloon position after DOM is rendered', () => {
 				setModelData( editor.model, '<paragraph>f[]oo</paragraph>' );
 				linkFeature._showUI();
 
-				const spyBefore = sinon.spy();
-				const spy = sinon.spy( balloon, 'updatePosition' );
-				const spyAfter = sinon.spy();
+				const renderSpy = testUtils.sinon.spy( view, '_render' );
+				const spy = testUtils.sinon.spy( balloon, 'updatePosition' );
 
-				view.on( 'render', spyBefore, { priority: priorities.get( 'low' ) + 1 } );
-				view.on( 'render', spyAfter, { priority: 'low' } );
 				view.fire( 'render' );
 
-				sinon.assert.callOrder( spyBefore, spy, spyAfter );
+				sinon.assert.callOrder( renderSpy, spy );
 			} );
 
 			// https://github.com/ckeditor/ckeditor5-link/issues/113
