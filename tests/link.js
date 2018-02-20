@@ -20,6 +20,7 @@ import ButtonView from '@ckeditor/ckeditor5-ui/src/button/buttonview';
 
 import Range from '@ckeditor/ckeditor5-engine/src/view/range';
 import ClickObserver from '@ckeditor/ckeditor5-engine/src/view/observer/clickobserver';
+import priorities from '@ckeditor/ckeditor5-utils/src/priorities';
 
 testUtils.createSinonSandbox();
 
@@ -235,7 +236,7 @@ describe( 'Link', () => {
 				viewDocument = view.document;
 			} );
 
-			it( 'should not duplicate #change listeners', () => {
+			it( 'should not duplicate #render listeners', () => {
 				setModelData( editor.model, '<paragraph>f[]oo</paragraph>' );
 
 				const spy = testUtils.sinon.stub( balloon, 'updatePosition' ).returns( {} );
@@ -247,6 +248,21 @@ describe( 'Link', () => {
 				linkFeature._showUI();
 				view.change( () => {} );
 				sinon.assert.calledTwice( spy );
+			} );
+
+			it( 'should update position on #render with low priority', () => {
+				setModelData( editor.model, '<paragraph>f[]oo</paragraph>' );
+				linkFeature._showUI();
+
+				const spyBefore = sinon.spy();
+				const spy = sinon.spy( balloon, 'updatePosition' );
+				const spyAfter = sinon.spy();
+
+				view.on( 'render', spyBefore, { priority: priorities.get( 'low' ) + 1 } );
+				view.on( 'render', spyAfter, { priority: 'low' } );
+				view.fire( 'render' );
+
+				sinon.assert.callOrder( spyBefore, spy, spyAfter );
 			} );
 
 			// https://github.com/ckeditor/ckeditor5-link/issues/113
