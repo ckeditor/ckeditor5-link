@@ -10,8 +10,7 @@
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
 import {
 	downcastAttributeToElement,
-	downcastMarkerToHighlight,
-	createViewElementFromHighlightDescriptor
+	downcastMarkerToHighlight
 } from '@ckeditor/ckeditor5-engine/src/conversion/downcast-converters';
 import { upcastElementToAttribute } from '@ckeditor/ckeditor5-engine/src/conversion/upcast-converters';
 import LinkCommand from './linkcommand';
@@ -20,8 +19,6 @@ import { createLinkElement } from './utils';
 import bindTwoStepCaretToAttribute from '@ckeditor/ckeditor5-engine/src/utils/bindtwostepcarettoattribute';
 import findLinkRange from './findlinkrange';
 import '../theme/link.css';
-import DocumentSelection from '@ckeditor/ckeditor5-engine/src/model/documentselection';
-import ModelSelection from '@ckeditor/ckeditor5-engine/src/model/selection';
 
 /**
  * The link engine feature.
@@ -81,6 +78,7 @@ export default class LinkEditing extends Plugin {
 		const highlightDescriptor = {
 			id: 'linkBoundaries',
 			class: 'ck-link_selected',
+			// Priority higher than link priority, but lower than default one.
 			priority: 7
 		};
 
@@ -110,30 +108,6 @@ export default class LinkEditing extends Plugin {
 			}
 
 			return false;
-		} );
-
-		// Custom converter for selection's "linkHref" attribute - when collapsed selection has this attribute it is
-		// wrapped with <span> similar to that used by highlighting mechanism. This <span> will be merged together with
-		// highlight wrapper. This prevents link splitting When selection is at the beginning or at the end of the link.
-		// Without this converter:
-		//
-		//		<a href="url">{}</a><span class="ck-link_selected"><a href="url">foo</a></span>
-		//
-		// When converter is applied:
-		//
-		//		<span class="ck-link_selected"><a href="url">{}foo</a></span>
-		editor.editing.downcastDispatcher.on( 'attribute:linkHref', ( evt, data, conversionApi ) => {
-			const selection = data.item;
-
-			if ( !( selection instanceof DocumentSelection || selection instanceof ModelSelection ) || !selection.isCollapsed ) {
-				return;
-			}
-
-			const writer = conversionApi.writer;
-			const viewSelection = writer.document.selection;
-			const wrapper = createViewElementFromHighlightDescriptor( highlightDescriptor );
-
-			conversionApi.writer.wrap( viewSelection.getFirstRange(), wrapper );
 		} );
 	}
 }
