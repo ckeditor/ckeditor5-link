@@ -81,7 +81,7 @@ export default class LinkEditing extends Plugin {
 		const highlightDescriptor = {
 			id: 'linkBoundaries',
 			class: 'ck-link_selected',
-			priority: 1
+			priority: 7
 		};
 
 		// Convert linkBoundaries marker to view highlight.
