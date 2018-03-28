@@ -101,7 +101,12 @@ export default class LinkEditing extends Plugin {
 				const modelRange = findLinkRange( selection.getFirstPosition(), selection.getAttribute( 'linkHref' ) );
 
 				if ( !marker || !marker.getRange().isEqual( modelRange ) ) {
-					writer.setMarker( 'linkBoundaries', modelRange );
+					if ( !marker ) {
+						writer.setMarker( 'linkBoundaries', { range: modelRange, usingOperation: false } );
+					} else {
+						writer.updateMarker( 'linkBoundaries', { range: modelRange } );
+					}
+
 					return true;
 				}
 			} else if ( marker ) {
