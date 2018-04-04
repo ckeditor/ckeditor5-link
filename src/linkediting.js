@@ -102,7 +102,7 @@ export default class LinkEditing extends Plugin {
 
 				if ( !marker || !marker.getRange().isEqual( modelRange ) ) {
 					if ( !marker ) {
-						writer.setMarker( 'linkBoundaries', { range: modelRange, usingOperation: false } );
+						writer.addMarker( 'linkBoundaries', { range: modelRange, usingOperation: false } );
 					} else {
 						writer.updateMarker( 'linkBoundaries', { range: modelRange } );
 					}
