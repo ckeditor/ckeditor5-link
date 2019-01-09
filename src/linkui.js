@@ -351,6 +351,8 @@ export default class LinkUI extends Plugin {
 			return;
 		}
 
+		this.fire( 'hide_ui' );
+
 		const editor = this.editor;
 
 		this.stopListening( editor.ui, 'update' );
