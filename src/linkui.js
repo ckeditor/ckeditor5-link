@@ -89,7 +89,10 @@ export default class LinkUI extends Plugin {
 		super.destroy();
 
 		// Destroy created UI components as they are not automatically destroyed (see ckeditor5#1341).
-		this.formView.destroy();
+		this.formView && this.formView.destroy();
+		this.formView = null;
+		this.actionsView && this.actionsView.destroy();
+		this.actionsView = null;
 	}
 
 	/**

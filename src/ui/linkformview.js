@@ -127,6 +127,21 @@ export default class LinkFormView extends View {
 		} );
 	}
 
+	destroy() {
+		super.destroy();
+
+		this.focusTracker && this.focusTracker && this.focusTracker.destroy(); this.focusTracker = null;
+		this.keystrokes && this.keystrokes && this.keystrokes.destroy(); this.keystrokes = null;
+		this._focusCycler && this._focusCycler && this._focusCycler.destroy(); this._focusCycler = null;
+		// todo not:
+		this.urlInputView && this.urlInputView.destroy();
+		this.urlInputView = null;
+		this.saveButtonView && this.saveButtonView.destroy();
+		this.saveButtonView = null;
+		this.cancelButtonView && this.cancelButtonView.destroy();
+		this.cancelButtonView = null;
+	}
+
 	/**
 	 * @inheritDoc
 	 */

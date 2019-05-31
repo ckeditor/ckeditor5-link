@@ -132,6 +132,20 @@ export default class LinkActionsView extends View {
 		} );
 	}
 
+	destroy() {
+		super.destroy();
+		this.focusTracker && this.focusTracker && this.focusTracker.destroy(); this.focusTracker = null;
+		this.keystrokes && this.keystrokes && this.keystrokes.destroy(); this.keystrokes = null;
+		this._focusCycler && this._focusCycler && this._focusCycler.destroy(); this._focusCycler = null;
+
+		this.previewButtonView && this.previewButtonView.destroy();
+		this.previewButtonView = null;
+		this.editButtonView && this.editButtonView.destroy();
+		this.editButtonView = null;
+		this.unlinkButtonView && this.unlinkButtonView.destroy();
+		this.unlinkButtonView = null;
+	}
+
 	/**
 	 * @inheritDoc
 	 */
