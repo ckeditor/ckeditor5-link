@@ -262,7 +262,7 @@ export default class LinkFormView extends View {
 	 * @returns {module:ui/viewcollection~ViewCollection} of switch buttons.
 	 */
 	_createManualDecoratorSwitches( manualDecorators ) {
-		const switches = this.createCollection();
+		const switches = [];
 
 		for ( const manualDecorator of manualDecorators ) {
 			const switchButton = new SwitchButtonView( this.locale );
@@ -279,10 +279,10 @@ export default class LinkFormView extends View {
 				manualDecorator.set( 'value', !switchButton.isOn );
 			} );
 
-			switches.add( switchButton );
+			switches.push( switchButton );
 		}
 
-		return switches;
+		return this.createCollection( switches );
 	}
 
 	/**
@@ -298,9 +298,7 @@ export default class LinkFormView extends View {
 	 * @returns {module:ui/viewcollection~ViewCollection} The children of link form view.
 	 */
 	_createFormChildren( manualDecorators ) {
-		const children = this.createCollection();
-
-		children.add( this.urlInputView );
+		const children = [ this.urlInputView ];
 
 		if ( manualDecorators.length ) {
 			const additionalButtonsView = new View();
@@ -325,13 +323,13 @@ export default class LinkFormView extends View {
 					]
 				}
 			} );
-			children.add( additionalButtonsView );
+
+			children.push( additionalButtonsView );
 		}
 
-		children.add( this.saveButtonView );
-		children.add( this.cancelButtonView );
+		children.push( this.saveButtonView, this.cancelButtonView );
 
-		return children;
+		return this.createCollection( children );
 	}
 }
 
