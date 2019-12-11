@@ -34,6 +34,13 @@ export default class LinkEditing extends Plugin {
 	/**
 	 * @inheritDoc
 	 */
+	static get pluginName() {
+		return 'LinkEditing';
+	}
+
+	/**
+	 * @inheritDoc
+	 */
 	constructor( editor ) {
 		super( editor );
 
@@ -47,6 +54,7 @@ export default class LinkEditing extends Plugin {
 	 */
 	init() {
 		const editor = this.editor;
+		const locale = editor.locale;
 
 		// Allow link attribute on all inline nodes.
 		editor.model.schema.extend( '$text', { allowAttributes: 'linkHref' } );
@@ -83,7 +91,13 @@ export default class LinkEditing extends Plugin {
 		this._enableManualDecorators( linkDecorators.filter( item => item.mode === DECORATOR_MANUAL ) );
 
 		// Enable two-step caret movement for `linkHref` attribute.
-		bindTwoStepCaretToAttribute( editor.editing.view, editor.model, this, 'linkHref' );
+		bindTwoStepCaretToAttribute( {
+			view: editor.editing.view,
+			model: editor.model,
+			emitter: this,
+			attribute: 'linkHref',
+			locale
+		} );
 
 		// Setup highlight over selected link.
 		this._setupLinkHighlight();
@@ -95,7 +109,7 @@ export default class LinkEditing extends Plugin {
 	 * for each one of them. Downcast dispatchers are obtained using the
 	 * {@link module:link/utils~AutomaticDecorators#getDispatcher} method.
 	 *
-	 * **Note**: This method also activates the automatic external link decorator if enabled via
+	 * **Note**: This method also activates the automatic external link decorator if enabled with
 	 * {@link module:link/link~LinkConfig#addTargetToExternalLinks `config.link.addTargetToExternalLinks`}.
 	 *
 	 * @private
@@ -105,7 +119,7 @@ export default class LinkEditing extends Plugin {
 		const editor = this.editor;
 		const automaticDecorators = new AutomaticDecorators();
 
-		// Adds default decorator for external links.
+		// Adds a default decorator for external links.
 		if ( editor.config.get( 'link.addTargetToExternalLinks' ) ) {
 			automaticDecorators.add( {
 				id: 'linkIsExternal',
@@ -126,11 +140,11 @@ export default class LinkEditing extends Plugin {
 	}
 
 	/**
-	 * Processes an array of configured {@link module:link/link~LinkDecoratorManualDefinition manual decorators}
-	 * and transforms them into {@link module:link/utils~ManualDecorator} instances and stores them in the
+	 * Processes an array of configured {@link module:link/link~LinkDecoratorManualDefinition manual decorators},
+	 * transforms them into {@link module:link/utils~ManualDecorator} instances and stores them in the
 	 * {@link module:link/linkcommand~LinkCommand#manualDecorators} collection (a model for manual decorators state).
 	 *
-	 * Also registers an {@link module:engine/conversion/downcasthelpers~DowncastHelpers#attributeToElement attributeToElement}
+	 * Also registers an {@link module:engine/conversion/downcasthelpers~DowncastHelpers#attributeToElement attribute-to-element}
 	 * converter for each manual decorator and extends the {@link module:engine/model/schema~Schema model's schema}
 	 * with adequate model attributes.
 	 *
@@ -180,13 +194,13 @@ export default class LinkEditing extends Plugin {
 	 * Adds a visual highlight style to a link in which the selection is anchored.
 	 * Together with two-step caret movement, they indicate that the user is typing inside the link.
 	 *
-	 * Highlight is turned on by adding `.ck-link_selected` class to the link in the view:
+	 * Highlight is turned on by adding the `.ck-link_selected` class to the link in the view:
 	 *
-	 * * the class is removed before conversion has started, as callbacks added with `'highest'` priority
-	 * to {@link module:engine/conversion/downcastdispatcher~DowncastDispatcher} events,
-	 * * the class is added in the view post fixer, after other changes in the model tree were converted to the view.
+	 * * The class is removed before the conversion has started, as callbacks added with the `'highest'` priority
+	 * to {@link module:engine/conversion/downcastdispatcher~DowncastDispatcher} events.
+	 * * The class is added in the view post fixer, after other changes in the model tree were converted to the view.
 	 *
-	 * This way, adding and removing highlight does not interfere with conversion.
+	 * This way, adding and removing the highlight does not interfere with conversion.
 	 *
 	 * @private
 	 */
@@ -198,6 +212,7 @@ export default class LinkEditing extends Plugin {
 		// Adding the class.
 		view.document.registerPostFixer( writer => {
 			const selection = editor.model.document.selection;
+			let changed = false;
 
 			if ( selection.hasAttribute( 'linkHref' ) ) {
 				const modelRange = findLinkRange( selection.getFirstPosition(), selection.getAttribute( 'linkHref' ), editor.model );
@@ -206,12 +221,15 @@ export default class LinkEditing extends Plugin {
 				// There might be multiple `a` elements in the `viewRange`, for example, when the `a` element is
 				// broken by a UIElement.
 				for ( const item of viewRange.getItems() ) {
-					if ( item.is( 'a' ) ) {
+					if ( item.is( 'a' ) && !item.hasClass( HIGHLIGHT_CLASS ) ) {
 						writer.addClass( HIGHLIGHT_CLASS, item );
 						highlightedLinks.add( item );
+						changed = true;
 					}
 				}
 			}
+
+			return changed;
 		} );
 
 		// Removing the class.

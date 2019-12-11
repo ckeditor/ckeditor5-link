@@ -1,11 +1,45 @@
 Changelog
 =========
 
+## [16.0.0](https://github.com/ckeditor/ckeditor5-link/compare/v15.0.0...v16.0.0) (2019-12-04)
+
+### Bug fixes
+
+* Link preview in the balloon should have `rel="noopener noreferrer"` set for security reasons. Closes [ckeditor/ckeditor5#5746](https://github.com/ckeditor/ckeditor5/issues/5746). ([5b921b4](https://github.com/ckeditor/ckeditor5-link/commit/5b921b4))
+
+### Other changes
+
+* Updated translations. ([5c84f57](https://github.com/ckeditor/ckeditor5-link/commit/5c84f57))
+
+
+## [15.0.0](https://github.com/ckeditor/ckeditor5-link/compare/v11.1.2...v15.0.0) (2019-10-23)
+
+### Other changes
+
+* Added `pluginName` property to editing plugin. ([a3bf928](https://github.com/ckeditor/ckeditor5-link/commit/a3bf928))
+* Updated translations. ([34b5552](https://github.com/ckeditor/ckeditor5-link/commit/34b5552)) ([9653092](https://github.com/ckeditor/ckeditor5-link/commit/9653092))
+
+
+## [11.1.2](https://github.com/ckeditor/ckeditor5-link/compare/v11.1.1...v11.1.2) (2019-08-26)
+
+### Bug fixes
+
+* Add missing return value for link post-fixer. Closes [#241](https://github.com/ckeditor/ckeditor5-link/issues/241). ([14e5803](https://github.com/ckeditor/ckeditor5-link/commit/14e5803))
+* Improved balloon positioning when there is more than one stack in the rotator. ([d6c45df](https://github.com/ckeditor/ckeditor5-link/commit/d6c45df))
+* The UI buttons should be marked as toggleable for better assistive technologies support (see [ckeditor/ckeditor5#1403](https://github.com/ckeditor/ckeditor5/issues/1403)). ([b9e31a0](https://github.com/ckeditor/ckeditor5-link/commit/b9e31a0))
+
+### Other changes
+
+* The issue tracker for this package was moved to https://github.com/ckeditor/ckeditor5/issues. See [ckeditor/ckeditor5#1988](https://github.com/ckeditor/ckeditor5/issues/1988). ([cea8fa2](https://github.com/ckeditor/ckeditor5-link/commit/cea8fa2))
+* Passed editor content direction to the `bindTwoStepCaretToAttribute()` helper in the `LinkEditing` plugin. See [ckeditor/ckeditor5#1151](https://github.com/ckeditor/ckeditor5/issues/1151). ([73bf132](https://github.com/ckeditor/ckeditor5-link/commit/73bf132))
+* Updated translations. ([4345546](https://github.com/ckeditor/ckeditor5-link/commit/4345546))
+
+
 ## [11.1.1](https://github.com/ckeditor/ckeditor5-link/compare/v11.1.0...v11.1.1) (2019-07-10)
 
 ### Other changes
 
-* Updated translations. ([6b720be](https://github.com/ckeditor/ckeditor5-link/commit/6b720be)) 
+* Updated translations. ([6b720be](https://github.com/ckeditor/ckeditor5-link/commit/6b720be))
 
 
 ## [11.1.0](https://github.com/ckeditor/ckeditor5-link/compare/v11.0.2...v11.1.0) (2019-07-04)
