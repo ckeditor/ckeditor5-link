@@ -208,7 +208,10 @@ export default class LinkUI extends Plugin {
 			button.bind( 'isOn' ).to( linkCommand, 'value', value => !!value );
 
 			// Show the panel on button click.
-			this.listenTo( button, 'execute', () => this._showUI( true ) );
+			this.listenTo( button, 'execute', () => {
+				this._showUI( true );
+				editor.editing.view.focus();
+			} );
 
 			return button;
 		} );
