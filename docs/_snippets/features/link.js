@@ -14,6 +14,14 @@ ClassicEditor
 	} )
 	.then( editor => {
 		window.editor = editor;
+
+		window.pinTourBalloon( editor, {
+			message: 'Click this button to create a new link.',
+			target: document.querySelector( '.ck-editor__top .ck-toolbar .ck-button:nth-of-type( 3 )' ),
+			positions: [
+				'southArrowNorthWest'
+			]
+		} );
 	} )
 	.catch( err => {
 		console.error( err.stack );
