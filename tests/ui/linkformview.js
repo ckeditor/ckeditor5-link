@@ -196,29 +196,31 @@ describe( 'LinkFormView', () => {
 		let view, collection;
 		beforeEach( () => {
 			collection = new Collection();
-			collection.add( new ManualDecorator( {
-				id: 'decorator1',
-				label: 'Foo',
-				attributes: {
-					foo: 'bar'
-				}
-			} ) );
-			collection.add( new ManualDecorator( {
-				id: 'decorator2',
-				label: 'Download',
-				attributes: {
-					download: 'download'
-				}
-			} ) );
-			collection.add( new ManualDecorator( {
-				id: 'decorator3',
-				label: 'Multi',
-				attributes: {
-					class: 'fancy-class',
-					target: '_blank',
-					rel: 'noopener noreferrer'
-				}
-			} ) );
+			collection.add(
+				new ManualDecorator( {
+					id: 'decorator1',
+					label: 'Foo',
+					attributes: {
+						foo: 'bar'
+					}
+				} ),
+				new ManualDecorator( {
+					id: 'decorator2',
+					label: 'Download',
+					attributes: {
+						download: 'download'
+					}
+				} ),
+				new ManualDecorator( {
+					id: 'decorator3',
+					label: 'Multi',
+					attributes: {
+						class: 'fancy-class',
+						target: '_blank',
+						rel: 'noopener noreferrer'
+					}
+				} )
+			);
 
 			view = new LinkFormView( { t: val => val }, collection );
 			view.render();
