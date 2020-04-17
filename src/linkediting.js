@@ -275,6 +275,7 @@ export default class LinkEditing extends Plugin {
 
 		viewDocument.on( 'paste', () => {
 			const nodeBefore = selection.anchor.nodeBefore;
+			const nodeAfter = selection.anchor.nodeAfter;
 
 			// NOTE: ↰ and ↱ represent the gravity of the selection.
 
@@ -318,6 +319,24 @@ export default class LinkEditing extends Plugin {
 			//		<$text bold="true">PASTED</$text>[]<$text linkHref="foo">link</$text>
 			//
 			if ( !nodeBefore.hasAttribute( 'linkHref' ) ) {
+				return;
+			}
+
+			// Filter out the following case where a link is a pasted in the middle (or before) another link
+			// (different URLs, so they will not merge). In this (let's say weird) case, we can leave the gravity
+			// as it is because it would stick to the first link anyway.
+			//
+			// Before paste:
+			//
+			//		                       ↰
+			//		<$text linkHref="foo">l[]ink</$text>
+			//
+			// Expected after paste:
+			//
+			//		                                                           ↰
+			//		<$text linkHref="foo">l</$text><$text linkHref="bar">PASTED[]</$text><$text linkHref="foo">ink</$text>
+			//
+			if ( nodeAfter && nodeAfter.hasAttribute( 'linkHref' ) ) {
 				return;
 			}
 

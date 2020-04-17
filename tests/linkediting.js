@@ -180,6 +180,51 @@ describe( 'LinkEditing', () => {
 			expect( model.document.selection.isGravityOverridden ).to.be.true;
 		} );
 
+		it( 'should not override the gravity when pasting a link into another link (different URLs, they won\'t merge)', () => {
+			const dataTransferMock = createDataTransfer( { 'text/html': '<a href="http://PASTED">PASTED</a>' } );
+
+			setModelData( model, '<paragraph><$text linkHref="ckeditor.com">f[]oo</$text></paragraph>' );
+
+			view.document.fire( 'paste', {
+				dataTransfer: dataTransferMock,
+				preventDefault() {},
+				stopPropagation() {}
+			} );
+
+			expect( getModelData( model ) ).to.equal(
+				'<paragraph>' +
+					'<$text linkHref="ckeditor.com">f</$text>' +
+					'<$text linkHref="http://PASTED">PASTED[]</$text>' +
+					'<$text linkHref="ckeditor.com">oo</$text>' +
+				'</paragraph>'
+			);
+
+			expect( model.document.selection.isGravityOverridden ).to.be.false;
+		} );
+
+		it( 'should not override the gravity when pasting before another link (different URLs, they won\'t merge)', () => {
+			const dataTransferMock = createDataTransfer( { 'text/html': '<a href="http://PASTED">PASTED</a>' } );
+
+			setModelData( model, '<paragraph>[]<$text linkHref="ckeditor.com">foo</$text></paragraph>' );
+
+			expect( model.document.selection.isGravityOverridden ).to.be.false;
+
+			view.document.fire( 'paste', {
+				dataTransfer: dataTransferMock,
+				preventDefault() {},
+				stopPropagation() {}
+			} );
+
+			expect( getModelData( model ) ).to.equal(
+				'<paragraph>' +
+					'<$text linkHref="http://PASTED">PASTED[]</$text>' +
+					'<$text linkHref="ckeditor.com">foo</$text>' +
+				'</paragraph>'
+			);
+
+			expect( model.document.selection.isGravityOverridden ).to.be.false;
+		} );
+
 		it( 'should restore gravity on the next change:range', () => {
 			const dataTransferMock = createDataTransfer( { 'text/html': '<a href="ckeditor.com">PASTED</a>' } );
 
