@@ -135,6 +135,27 @@ describe( 'LinkEditing', () => {
 			expect( model.document.selection.isGravityOverridden ).to.be.true;
 		} );
 
+		it( 'should not override the gravity when pasting a non-link content', () => {
+			const dataTransferMock = createDataTransfer( { 'text/html': '<b>PASTED</b>' } );
+
+			setModelData( model, '<paragraph><$text linkHref="ckeditor.com">foo[]</$text></paragraph>' );
+
+			view.document.fire( 'paste', {
+				dataTransfer: dataTransferMock,
+				preventDefault() {},
+				stopPropagation() {}
+			} );
+
+			expect( getModelData( model ) ).to.equal(
+				'<paragraph>' +
+					'<$text linkHref="ckeditor.com">foo</$text>' +
+					'<$text bold="true">PASTED[]</$text>' +
+				'</paragraph>'
+			);
+
+			expect( model.document.selection.isGravityOverridden ).to.be.false;
+		} );
+
 		it( 'should not override the gravity when pasting in the middle of a link with the same URL', () => {
 			const dataTransferMock = createDataTransfer( { 'text/html': '<a href="ckeditor.com">PASTED</a>' } );
 
