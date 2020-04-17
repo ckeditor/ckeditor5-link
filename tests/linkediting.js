@@ -7,7 +7,9 @@ import LinkEditing from '../src/linkediting';
 import LinkCommand from '../src/linkcommand';
 import UnlinkCommand from '../src/unlinkcommand';
 
-import VirtualTestEditor from '@ckeditor/ckeditor5-core/tests/_utils/virtualtesteditor';
+import Writer from '@ckeditor/ckeditor5-engine/src/model/writer';
+import ClassicTestEditor from '@ckeditor/ckeditor5-core/tests/_utils/classictesteditor';
+import Clipboard from '@ckeditor/ckeditor5-clipboard/src/clipboard';
 import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
 import Enter from '@ckeditor/ckeditor5-enter/src/enter';
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
@@ -19,15 +21,26 @@ import { keyCodes } from '@ckeditor/ckeditor5-utils/src/keyboard';
 /* global document */
 
 describe( 'LinkEditing', () => {
-	let editor, model, view;
+	let element, editor, model, view;
 
 	beforeEach( () => {
-		return VirtualTestEditor
-			.create( {
-				plugins: [ Paragraph, LinkEditing, Enter ]
+		element = document.createElement( 'div' );
+		document.body.appendChild( element );
+
+		return ClassicTestEditor
+			.create( element, {
+				plugins: [ Clipboard, Paragraph, LinkEditing, Enter ]
 			} )
 			.then( newEditor => {
 				editor = newEditor;
+
+				editor.model.schema.extend( '$text', { allowAttributes: 'bold' } );
+
+				editor.conversion.attributeToElement( {
+					model: 'bold',
+					view: 'b'
+				} );
+
 				model = editor.model;
 				view = editor.editing.view;
 			} );
@@ -35,6 +48,7 @@ describe( 'LinkEditing', () => {
 
 	afterEach( () => {
 		editor.destroy();
+		element.remove();
 	} );
 
 	it( 'should have pluginName', () => {
@@ -73,8 +87,8 @@ describe( 'LinkEditing', () => {
 		} );
 
 		it( 'should be bound to th `linkHref` attribute (RTL)', () => {
-			return VirtualTestEditor
-				.create( {
+			return ClassicTestEditor
+				.create( element, {
 					plugins: [ Paragraph, LinkEditing, Enter ],
 					language: {
 						content: 'ar'
@@ -101,6 +115,123 @@ describe( 'LinkEditing', () => {
 
 					return editor.destroy();
 				} );
+		} );
+	} );
+
+	// https://github.com/ckeditor/ckeditor5/issues/6053
+	describe( 'selection gravity management on paste', () => {
+		it( 'should override the gravity when pasting a link', () => {
+			const dataTransferMock = createDataTransfer( { 'text/html': '<a href="ckeditor.com">PASTED</a>' } );
+
+			setModelData( model, '<paragraph>foo[]</paragraph>' );
+
+			view.document.fire( 'paste', {
+				dataTransfer: dataTransferMock,
+				preventDefault() {},
+				stopPropagation() {}
+			} );
+
+			expect( getModelData( model ) ).to.equal( '<paragraph>foo<$text linkHref="ckeditor.com">PASTED</$text>[]</paragraph>' );
+			expect( model.document.selection.isGravityOverridden ).to.be.true;
+		} );
+
+		it( 'should not override the gravity when pasting in the middle of a link with the same URL', () => {
+			const dataTransferMock = createDataTransfer( { 'text/html': '<a href="ckeditor.com">PASTED</a>' } );
+
+			setModelData( model, '<paragraph><$text linkHref="ckeditor.com">fo[]o</$text></paragraph>' );
+
+			view.document.fire( 'paste', {
+				dataTransfer: dataTransferMock,
+				preventDefault() {},
+				stopPropagation() {}
+			} );
+
+			expect( getModelData( model ) ).to.equal( '<paragraph><$text linkHref="ckeditor.com">foPASTED[]o</$text></paragraph>' );
+			expect( model.document.selection.isGravityOverridden ).to.be.false;
+		} );
+
+		it( 'should not override the gravity when pasting before a link when the gravity is already overridden', () => {
+			const dataTransferMock = createDataTransfer( { 'text/html': '<b>PASTED</b>' } );
+
+			setModelData( model, '<paragraph>foo[]<$text linkHref="ckeditor.com">bar</$text></paragraph>' );
+
+			view.document.fire( 'keydown', {
+				keyCode: keyCodes.arrowright,
+				preventDefault: () => {},
+				domTarget: document.body
+			} );
+
+			expect( model.document.selection.isGravityOverridden ).to.be.true;
+
+			view.document.fire( 'paste', {
+				dataTransfer: dataTransferMock,
+				preventDefault() {},
+				stopPropagation() {}
+			} );
+
+			expect( getModelData( model ) ).to.equal(
+				'<paragraph>' +
+					'foo' +
+					'<$text bold="true">PASTED</$text>' +
+					'<$text linkHref="ckeditor.com">[]bar</$text>' +
+				'</paragraph>'
+			);
+
+			expect( model.document.selection.isGravityOverridden ).to.be.true;
+		} );
+
+		it( 'should restore gravity on the next change:range', () => {
+			const dataTransferMock = createDataTransfer( { 'text/html': '<a href="ckeditor.com">PASTED</a>' } );
+
+			setModelData( model, '<paragraph>fo[]o</paragraph>' );
+
+			view.document.fire( 'paste', {
+				dataTransfer: dataTransferMock,
+				preventDefault() {},
+				stopPropagation() {}
+			} );
+
+			expect( getModelData( model ) ).to.equal( '<paragraph>fo<$text linkHref="ckeditor.com">PASTED</$text>[]o</paragraph>' );
+			expect( model.document.selection.isGravityOverridden ).to.be.true;
+
+			model.modifySelection( model.document.selection );
+
+			expect( getModelData( model ) ).to.equal( '<paragraph>fo<$text linkHref="ckeditor.com">PASTED</$text>[o]</paragraph>' );
+
+			expect( model.document.selection.isGravityOverridden ).to.be.false;
+		} );
+
+		// It's a rather dummy test that checks if restoring does not happen on each change:range.
+		it( 'should not restore gravity if it wasn\'t overridden in the first place', () => {
+			const spy = sinon.spy( Writer.prototype, 'restoreSelectionGravity' );
+
+			setModelData( model, '<paragraph>fo[]o</paragraph>' );
+			model.modifySelection( model.document.selection );
+
+			sinon.assert.notCalled( spy );
+		} );
+
+		it( 'should not restore the gravity if the change:range was indirect (e.g. comming from the collaboration)', () => {
+			const dataTransferMock = createDataTransfer( { 'text/html': '<a href="ckeditor.com">PASTED</a>' } );
+
+			setModelData( model, '<paragraph>foo[]</paragraph>' );
+
+			view.document.fire( 'paste', {
+				dataTransfer: dataTransferMock,
+				preventDefault() {},
+				stopPropagation() {}
+			} );
+
+			expect( getModelData( model ) ).to.equal( '<paragraph>foo<$text linkHref="ckeditor.com">PASTED</$text>[]</paragraph>' );
+			expect( model.document.selection.isGravityOverridden ).to.be.true;
+
+			// Simulate an external text insertion to trigger #change:range.
+			model.enqueueChange( 'transparent', writer => {
+				writer.insertText( 'EXTERNAL', writer.createPositionAt( model.document.getRoot().getChild( 0 ), 0 ) );
+			} );
+
+			expect( getModelData( model ) ).to.equal( '<paragraph>EXTERNALfoo<$text linkHref="ckeditor.com">PASTED</$text>[]</paragraph>' );
+			expect( model.document.selection.isGravityOverridden ).to.be.true;
 		} );
 	} );
 
@@ -435,8 +566,8 @@ describe( 'LinkEditing', () => {
 			describe( 'for link.addTargetToExternalLinks = false', () => {
 				let editor, model;
 				beforeEach( () => {
-					return VirtualTestEditor
-						.create( {
+					return ClassicTestEditor
+						.create( element, {
 							plugins: [ Paragraph, LinkEditing, Enter ],
 							link: {
 								addTargetToExternalLinks: true
@@ -512,8 +643,8 @@ describe( 'LinkEditing', () => {
 
 				beforeEach( () => {
 					editor.destroy();
-					return VirtualTestEditor
-						.create( {
+					return ClassicTestEditor
+						.create( element, {
 							plugins: [ Paragraph, LinkEditing, Enter ],
 							link: {
 								addTargetToExternalLinks: false,
@@ -599,9 +730,11 @@ describe( 'LinkEditing', () => {
 						} );
 					}
 				}
+
 				editor.destroy();
-				return VirtualTestEditor
-					.create( {
+
+				return ClassicTestEditor
+					.create( element, {
 						plugins: [ Paragraph, LinkEditing, Enter, CustomLinks ],
 						link: {
 							addTargetToExternalLinks: true
@@ -625,9 +758,20 @@ describe( 'LinkEditing', () => {
 		} );
 
 		describe( 'upcast converter', () => {
+			let element, editor;
+
+			beforeEach( () => {
+				element = document.createElement( 'div' );
+				document.body.appendChild( element );
+			} );
+
+			afterEach( () => {
+				element.remove();
+			} );
+
 			it( 'should upcast attributes from initial data', () => {
-				return VirtualTestEditor
-					.create( {
+				return ClassicTestEditor
+					.create( element, {
 						initialData: '<p><a href="url" target="_blank" rel="noopener noreferrer" download="file">Foo</a>' +
 							'<a href="example.com" download="file">Bar</a></p>',
 						plugins: [ Paragraph, LinkEditing, Enter ],
@@ -661,12 +805,14 @@ describe( 'LinkEditing', () => {
 								'<$text linkHref="example.com" linkIsDownloadable="true">Bar</$text>' +
 							'</paragraph>'
 						);
+
+						return editor.destroy();
 					} );
 			} );
 
 			it( 'should not upcast partial and incorrect attributes', () => {
-				return VirtualTestEditor
-					.create( {
+				return ClassicTestEditor
+					.create( element, {
 						initialData: '<p><a href="url" target="_blank" download="something">Foo</a>' +
 							'<a href="example.com" download="test">Bar</a></p>',
 						plugins: [ Paragraph, LinkEditing, Enter ],
@@ -700,8 +846,18 @@ describe( 'LinkEditing', () => {
 								'<$text linkHref="example.com">Bar</$text>' +
 							'</paragraph>'
 						);
+
+						return editor.destroy();
 					} );
 			} );
 		} );
 	} );
 } );
+
+function createDataTransfer( data ) {
+	return {
+		getData( type ) {
+			return data[ type ];
+		}
+	};
+}

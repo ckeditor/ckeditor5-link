@@ -101,6 +101,9 @@ export default class LinkEditing extends Plugin {
 
 		// Setup highlight over selected link.
 		this._setupLinkHighlight();
+
+		// Change the gravity of the selection in some cases after the link was pasted.
+		this._enablePasteSelectionGravityFixer();
 	}
 
 	/**
@@ -248,6 +251,99 @@ export default class LinkEditing extends Plugin {
 					}
 				} );
 			}
+		} );
+	}
+
+	/**
+	 * Starts listening to {@link module:engine/view/document~Document#event:paste} and corrects the model
+	 * selection gravity if the selection is at the end of a link after pasting.
+	 *
+	 * Overriding the selection gravity improves the overall UX because the user is no longer "trapped" by the
+	 * `linkHref` attribute of the selection and they can type a "clean" (`linkHref`–less) text right away.
+	 *
+	 * See https://github.com/ckeditor/ckeditor5/issues/6053.
+	 *
+	 * @private
+	 */
+	_enablePasteSelectionGravityFixer() {
+		const editor = this.editor;
+		const model = editor.model;
+		const selection = model.document.selection;
+		const viewDocument = editor.editing.view.document;
+
+		let gravityOverrideUid = null;
+
+		viewDocument.on( 'paste', () => {
+			const nodeBefore = selection.anchor.nodeBefore;
+
+			// NOTE: ↰ and ↱ represent the gravity of the selection.
+
+			// The only truly valid case is:
+			//
+			//		                                       ↰
+			//		...<$text linkHref="foo">PASTED</$text>[]
+			//
+			// If the selection is not "trapped" by the `linkHref` attribute after pasting, there's
+			// nothing to fix there.
+			if ( !selection.hasAttribute( 'linkHref' ) ) {
+				return;
+			}
+
+			// Filter out the following case where a link with the same href (e.g. <a href="foo">PASTED</a>) is pasted
+			// in the middle of an existing link:
+			//
+			// Before paste:
+			//		                       ↰
+			//		<$text linkHref="foo">l[]ink</$text>
+			//
+			// Expected after paste:
+			//		                             ↰
+			//		<$text linkHref="foo">lPASTED[]ink</$text>
+			//
+			if ( !nodeBefore ) {
+				return;
+			}
+
+			// Filter out the following case where the selection has the "linkHref" attribute because the
+			// gravity is already overridden and some text with another attribute (e.g. <b>PASTED</b>) is pasted:
+			//
+			// Before paste:
+			//
+			//		 ↱
+			//		[]<$text linkHref="foo">link</$text>
+			//
+			// Expected after paste:
+			//
+			//		                                  ↱
+			//		<$text bold="true">PASTED</$text>[]<$text linkHref="foo">link</$text>
+			//
+			if ( !nodeBefore.hasAttribute( 'linkHref' ) ) {
+				return;
+			}
+
+			model.change( writer => {
+				gravityOverrideUid = writer.overrideSelectionGravity();
+			} );
+		}, { priority: 'low' } );
+
+		// Restore the selection gravity automatically as soon as the selection range changes.
+		selection.on( 'change:range', ( evt, data ) => {
+			// Don't restore the gravity if it wasn't overridden in the first place.
+			if ( !gravityOverrideUid ) {
+				return;
+			}
+
+			// Skip automatic restore when the change is indirect.
+			// It means that e.g. if the change was external (collaboration) and the user had their
+			if ( !data.directChange ) {
+				return;
+			}
+
+			model.change( writer => {
+				writer.restoreSelectionGravity( gravityOverrideUid );
+
+				gravityOverrideUid = null;
+			} );
 		} );
 	}
 }
