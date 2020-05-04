@@ -308,4 +308,4 @@ Internal changes only (updated dependencies, documentation, etc.).
 
 * Updated translations. ([7a0a8d3](https://github.com/ckeditor/ckeditor5-link/commit/7a0a8d3))
 
-<!-- foo -->
+<!-- foo2 -->
